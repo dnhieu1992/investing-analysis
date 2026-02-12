@@ -1,0 +1,2 @@
+ALTER TABLE trading_history
+  ADD COLUMN stratery_id BIGINT UNSIGNED DEFAULT NULL;

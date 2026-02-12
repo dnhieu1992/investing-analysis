@@ -1,0 +1,2 @@
+ALTER TABLE trading_history
+  ADD COLUMN source VARCHAR(255) DEFAULT NULL;

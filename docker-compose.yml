@@ -1,0 +1,12 @@
+services:
+  web:
+    build: .
+    ports:
+      - "9999:3000"
+    environment:
+      NODE_ENV: production
+      MYSQL_HOST: host.docker.internal
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+      MYSQL_DATABASE: investing_analytic

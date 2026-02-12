@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS stratery (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  image_references JSON,
+  PRIMARY KEY (id)
+);
