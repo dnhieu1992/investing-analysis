@@ -449,7 +449,14 @@ export default function AssetsPage() {
 
                   return (
                   <tr key={item.name} className="border-t border-gray-100 dark:border-gray-800">
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
+                    <td className="px-4 py-3 font-medium">
+                      <Link
+                        href={`/assets/${encodeURIComponent(item.name)}`}
+                        className="underline decoration-gray-400 underline-offset-4 hover:text-blue-600 dark:hover:text-blue-400"
+                      >
+                        {item.name}
+                      </Link>
+                    </td>
                     <td className="px-4 py-3">{formatCurrency(item.currentPrice)}</td>
                     <td className="px-4 py-3">
                       <div>{formatCurrency(item.currentCost)}</div>
