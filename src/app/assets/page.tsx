@@ -21,6 +21,7 @@ type GroupedPortfolio = {
   currentPrice: number;
   holdingsQuantity: number;
   holdingsValue: number;
+  currentCost: number;
   avgBuyPrice: number | null;
   profitValue: number | null;
   profitPercent: number | null;
@@ -52,10 +53,10 @@ function formatCurrency(value: number) {
 }
 
 function formatUsdt(value: number) {
-  return `${value.toLocaleString(undefined, {
+  return `$${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })} USDT`;
+  })}`;
 }
 
 export default function AssetsPage() {
@@ -239,6 +240,11 @@ export default function AssetsPage() {
           (sum, item) => sum + item.quantity,
           0,
         );
+        const soldCapital =
+          avgBuyPrice !== null && avgBuyPrice > 0
+            ? avgBuyPrice * totalSellQuantity
+            : 0;
+        const currentCost = entry.totalBuyCost - soldCapital;
         const profitValue =
           avgBuyPrice !== null && avgBuyPrice > 0 && totalSellQuantity > 0
             ? sellTransactions.reduce(
@@ -258,6 +264,7 @@ export default function AssetsPage() {
           currentPrice,
           holdingsQuantity: entry.netQty,
           holdingsValue,
+          currentCost,
           avgBuyPrice,
           profitValue,
           profitPercent,
@@ -416,7 +423,7 @@ export default function AssetsPage() {
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Holdings</th>
+                <th className="px-4 py-3">Current Cost</th>
                 <th className="px-4 py-3">Avg. Buy Price</th>
                 <th className="px-4 py-3">Profit/Loss</th>
                 <th className="px-4 py-3">Actions</th>
@@ -445,7 +452,7 @@ export default function AssetsPage() {
                     <td className="px-4 py-3 font-medium">{item.name}</td>
                     <td className="px-4 py-3">{formatCurrency(item.currentPrice)}</td>
                     <td className="px-4 py-3">
-                      <div>{formatCurrency(item.holdingsValue)}</div>
+                      <div>{formatCurrency(item.currentCost)}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         {item.holdingsQuantity}
                       </div>
