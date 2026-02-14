@@ -52,6 +52,13 @@ function formatCurrency(value: number) {
   })}`;
 }
 
+function formatExactPrice(value: number) {
+  return `$${value.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 8,
+  })}`;
+}
+
 function formatUsdt(value: number) {
   return `$${value.toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -427,9 +434,8 @@ export default function AssetsPage() {
             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
               <tr>
                 <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Price</th>
-                <th className="px-4 py-3">Current Cost</th>
                 <th className="px-4 py-3">Avg. Buy Price</th>
+                <th className="px-4 py-3">Current Cost</th>
                 <th className="px-4 py-3">Profit/Loss</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
@@ -462,15 +468,14 @@ export default function AssetsPage() {
                         {item.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3">{formatCurrency(item.currentPrice)}</td>
+                    <td className="px-4 py-3">
+                      {avgBuyPrice === null ? "-" : formatExactPrice(avgBuyPrice)}
+                    </td>
                     <td className="px-4 py-3">
                       <div>{formatCurrency(item.currentCost)}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
                         {item.holdingsQuantity}
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      {avgBuyPrice === null ? "-" : formatCurrency(avgBuyPrice)}
                     </td>
                     <td className={`px-4 py-3 ${profitClass}`}>
                       {profitValue === null ? (
