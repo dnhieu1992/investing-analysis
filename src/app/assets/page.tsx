@@ -270,7 +270,12 @@ export default function AssetsPage() {
           profitPercent,
         };
       })
-      .sort((a, b) => b.holdingsValue - a.holdingsValue);
+      .sort((a, b) => {
+        const aProfit = a.profitValue ?? Number.NEGATIVE_INFINITY;
+        const bProfit = b.profitValue ?? Number.NEGATIVE_INFINITY;
+        if (bProfit !== aProfit) return bProfit - aProfit;
+        return b.holdingsValue - a.holdingsValue;
+      });
   }, [assets]);
 
   const portfolioSummary = useMemo(() => {
