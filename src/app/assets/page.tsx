@@ -420,6 +420,7 @@ export default function AssetsPage() {
                 <th className="px-4 py-3">Avg. Buy Price</th>
                 <th className="px-4 py-3">Current Cost</th>
                 <th className="px-4 py-3">Profit/Loss</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
             </thead>
@@ -440,6 +441,8 @@ export default function AssetsPage() {
                       : profitValue >= 0
                       ? "text-green-600 dark:text-green-400"
                       : "text-red-600 dark:text-red-400";
+                  const statusLabel =
+                    Math.abs(item.currentCost) < 0.00000001 ? "Closed" : "Holding";
 
                   return (
                   <tr key={item.name} className="border-t border-gray-100 dark:border-gray-800">
@@ -466,6 +469,17 @@ export default function AssetsPage() {
                       ) : (
                         <div>{profitValue >= 0 ? "+" : ""}{formatCurrency(profitValue)}</div>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-semibold ${
+                          statusLabel === "Closed"
+                            ? "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
+                            : "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300"
+                        }`}
+                      >
+                        {statusLabel}
+                      </span>
                     </td>
                     <td className="px-4 py-3 align-middle">
                       <div className="relative flex items-center gap-3 text-gray-500 dark:text-gray-400">
