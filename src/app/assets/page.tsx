@@ -293,24 +293,19 @@ export default function AssetsPage() {
     );
     const allTimeProfitPercent =
       firstCapital > 0 ? (totalProfit / firstCapital) * 100 : null;
-    const totalUsdt = firstCapital + totalProfit;
     const holdingUsdt = groupedPortfolios.reduce(
-      (sum, item) => sum + Math.max(item.holdingsValue, 0),
+      (sum, item) => sum + Math.max(item.currentCost, 0),
       0,
     );
-    const remainUsdt = totalUsdt - holdingUsdt;
-    const totalUsdtPercent =
-      firstCapital > 0 ? (totalUsdt / firstCapital) * 100 : null;
+    const remainUsdt = firstCapital - holdingUsdt;
     const remainUsdtPercent =
-      totalUsdt !== 0 ? (remainUsdt / totalUsdt) * 100 : null;
+      firstCapital !== 0 ? (remainUsdt / firstCapital) * 100 : null;
 
     return {
       firstCapital,
       totalProfit,
       allTimeProfitPercent,
-      totalUsdt,
       remainUsdt,
-      totalUsdtPercent,
       remainUsdtPercent,
     };
   }, [groupedPortfolios]);
@@ -366,24 +361,12 @@ export default function AssetsPage() {
         </button>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
           <p className="text-sm font-medium text-gray-600 dark:text-gray-300">First Capital</p>
           <div className="mt-1.5 text-3xl font-bold text-green-600 dark:text-green-400">
             {formatUsdt(portfolioSummary.firstCapital)}
           </div>
-        </div>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">Total USDT</p>
-          <div className="mt-1.5 text-3xl font-bold text-green-600 dark:text-green-400">
-            {formatUsdt(portfolioSummary.totalUsdt)}
-          </div>
-          {portfolioSummary.totalUsdtPercent !== null && (
-            <div className="mt-1 text-lg font-semibold text-green-600 dark:text-green-400">
-              {portfolioSummary.totalUsdtPercent.toFixed(2)}%
-            </div>
-          )}
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
