@@ -286,7 +286,7 @@ export default function AssetsPage() {
   }, [assets]);
 
   const portfolioSummary = useMemo(() => {
-    const firstCapital = 2000;
+    const firstCapital: number = 2000;
     const totalProfit = groupedPortfolios.reduce(
       (sum, item) => sum + (item.profitValue ?? 0),
       0,
