@@ -62,16 +62,16 @@ type FormState = {
 
 function createEmptyForm(): FormState {
   return {
-    name: "",
+    name: "BTC",
     openDate: new Date().toISOString().slice(0, 10),
     closeDate: null,
     openPrice: "",
     closePrice: "",
     notes: null,
-    source: "",
+    source: "BINGX",
     orderType: "",
-    type: "long",
-    level: "1",
+    type: "short",
+    level: "5",
     volume: "",
     strateryId: "",
     referenceImagesText: "",
@@ -140,6 +140,11 @@ export default function TradingHistoryPage() {
 
   const isEditing = useMemo(() => editingId !== null, [editingId]);
 
+  const defaultStrateryId = useMemo(
+    () => (strateries.length > 0 ? String(strateries[0].id) : ""),
+    [strateries],
+  );
+
   async function loadTrades() {
     setError(null);
     const res = await fetch("/api/trading-history", { cache: "no-store" });
@@ -171,6 +176,13 @@ export default function TradingHistoryPage() {
     void loadTrades();
     void loadStrateries();
   }, []);
+
+  useEffect(() => {
+    if (!isDialogOpen || isEditing || form.strateryId || !defaultStrateryId) {
+      return;
+    }
+    setForm((prev) => ({ ...prev, strateryId: defaultStrateryId }));
+  }, [defaultStrateryId, form.strateryId, isDialogOpen, isEditing]);
 
   const filteredTrades = useMemo(() => {
     const nameFilter = filterName.trim().toLowerCase();
@@ -227,7 +239,10 @@ export default function TradingHistoryPage() {
   }
 
   function resetForm() {
-    setForm(createEmptyForm());
+    setForm({
+      ...createEmptyForm(),
+      strateryId: defaultStrateryId,
+    });
     setEditingId(null);
   }
 
