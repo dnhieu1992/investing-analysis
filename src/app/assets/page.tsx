@@ -516,7 +516,7 @@ export default function AssetsPage() {
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Avg. Buy Price</th>
-                <th className="px-4 py-3">Current Cost</th>
+                <th className="px-4 py-3">Basic Cost</th>
                 <th className="px-4 py-3">Profit/Loss</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Actions</th>

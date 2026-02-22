@@ -87,15 +87,6 @@ export default function Home() {
       }));
   }, [assets]);
 
-  const totalValue = useMemo(
-    () =>
-      holdings.reduce(
-        (sum, asset) => sum + asset.quantity * asset.avgBuyPrice,
-        0,
-      ),
-    [holdings],
-  );
-
   const holdingsByValueDesc = useMemo(
     () =>
       [...holdings].sort(
@@ -211,13 +202,20 @@ export default function Home() {
   }, [groupedPortfolios]);
 
   const chartData = useMemo(() => {
-    const hasHoldings = holdingsByValueDesc.length > 0;
-    const labels = hasHoldings
-      ? holdingsByValueDesc.map((asset) => asset.name)
-      : ["USDT"];
-    const values = hasHoldings
-      ? holdingsByValueDesc.map((asset) => asset.quantity * asset.avgBuyPrice)
-      : [1];
+    const usdtBalance = Math.max(summary.remainUsdt, 0);
+    const entries = holdingsByValueDesc.map((asset) => ({
+      name: asset.name,
+      value: asset.quantity * asset.avgBuyPrice,
+    }));
+    if (usdtBalance > 0) {
+      entries.push({
+        name: "USDT",
+        value: usdtBalance,
+      });
+    }
+    entries.sort((a, b) => b.value - a.value);
+    const labels = entries.map((entry) => entry.name);
+    const values = entries.map((entry) => entry.value);
     const colors = [
       "#111827",
       "#2563EB",
@@ -229,9 +227,7 @@ export default function Home() {
       "#D97706",
     ];
 
-    const backgroundColor = hasHoldings
-      ? values.map((_, index) => colors[index % colors.length])
-      : ["#16A34A"];
+    const backgroundColor = values.map((_, index) => colors[index % colors.length]);
 
     return {
       labels,
@@ -243,7 +239,12 @@ export default function Home() {
         },
       ],
     };
-  }, [holdingsByValueDesc]);
+  }, [holdingsByValueDesc, summary.remainUsdt]);
+
+  const chartTotalValue = useMemo(
+    () => chartData.datasets[0].data.reduce((sum, value) => sum + value, 0),
+    [chartData],
+  );
 
   const chartOptions = useMemo(
     () => ({
@@ -260,16 +261,15 @@ export default function Home() {
         tooltip: {
           callbacks: {
             label: (context: TooltipItem<"pie">) => {
-              if (holdingsByValueDesc.length === 0) return "USDT: 100%";
               const raw = typeof context.raw === "number" ? context.raw : 0;
-              const percent = totalValue > 0 ? (raw / totalValue) * 100 : 0;
+              const percent = chartTotalValue > 0 ? (raw / chartTotalValue) * 100 : 0;
               return `${context.label}: ${percent.toFixed(1)}%`;
             },
           },
         },
       },
     }),
-    [holdingsByValueDesc, totalValue],
+    [chartTotalValue],
   );
 
   const valueColor = (value: number) =>
@@ -365,7 +365,7 @@ export default function Home() {
           <div className="text-right text-xs text-gray-500 dark:text-gray-400">
             Total value
             <div className="text-base font-semibold text-gray-900 dark:text-gray-100">
-              {totalValue.toFixed(2)}
+              {chartTotalValue.toFixed(2)}
             </div>
           </div>
         </div>
@@ -376,39 +376,26 @@ export default function Home() {
           <div className="relative h-64 w-full">
             <Pie data={chartData} options={chartOptions} />
           </div>
-          <div className="grid gap-3">
-            {holdingsByValueDesc.length === 0 ? (
-              <div className="flex items-center flex-start gap-3">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: chartData.datasets[0].backgroundColor[0] }}
-                  />
-                  USDT
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            {chartData.labels.map((label, index) => {
+              const value = chartData.datasets[0].data[index];
+              const percent = chartTotalValue > 0 ? (value / chartTotalValue) * 100 : 0;
+              const color = chartData.datasets[0].backgroundColor[index];
+              return (
+                <div key={`${label}-${index}`} className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
+                    {label}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {percent.toFixed(1)}%
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">100%</div>
-              </div>
-            ) : (
-              holdingsByValueDesc.map((asset, index) => {
-                const value = asset.quantity * asset.avgBuyPrice;
-                const percent = totalValue > 0 ? (value / totalValue) * 100 : 0;
-                const color = chartData.datasets[0].backgroundColor[index];
-                return (
-                    <div key={asset.id} className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 text-sm font-medium">
-                        <span
-                          className="h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: color }}
-                        />
-                        {asset.name}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {percent.toFixed(1)}%
-                      </div>
-                    </div>
-                  );
-                })
-            )}
+              );
+            })}
           </div>
         </div>
       </section>
