@@ -83,6 +83,7 @@ export default function FeatureDashboardPage() {
     }
     return { totalProfit: profit, totalLoss: loss };
   }, [closedTrades]);
+  const totalProfitLoss = totalProfit - totalLoss;
 
   const grouped = useMemo(() => {
     const map = new Map<string, GroupedSummary>();
@@ -147,13 +148,29 @@ export default function FeatureDashboardPage() {
         </p>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            Total Profit/Loss
+          </p>
+          <div
+            className={`mt-2 text-2xl font-semibold ${
+              totalProfitLoss > 0
+                ? "text-green-600 dark:text-green-400"
+                : totalProfitLoss < 0
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-gray-600 dark:text-gray-300"
+            }`}
+          >
+            ${totalProfitLoss.toFixed(2)}
+          </div>
+        </div>
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
             Total Profit
           </p>
           <div className="mt-2 text-2xl font-semibold text-green-600 dark:text-green-400">
-            {totalProfit.toFixed(2)}
+            ${totalProfit.toFixed(2)}
           </div>
         </div>
         <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
@@ -161,7 +178,7 @@ export default function FeatureDashboardPage() {
             Total Loss
           </p>
           <div className="mt-2 text-2xl font-semibold text-red-600 dark:text-red-400">
-            {totalLoss.toFixed(2)}
+            ${totalLoss.toFixed(2)}
           </div>
         </div>
       </section>
@@ -199,10 +216,10 @@ export default function FeatureDashboardPage() {
                     <td className="px-4 py-3 font-medium">{item.name}</td>
                     <td className="px-4 py-3">{item.totalOrder}</td>
                     <td className="px-4 py-3 text-green-600 dark:text-green-400">
-                      {item.totalProfit.toFixed(2)}
+                      ${item.totalProfit.toFixed(2)}
                     </td>
                     <td className="px-4 py-3 text-red-600 dark:text-red-400">
-                      {item.totalLoss.toFixed(2)}
+                      ${item.totalLoss.toFixed(2)}
                     </td>
                   </tr>
                 ))

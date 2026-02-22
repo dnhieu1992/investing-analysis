@@ -329,6 +329,22 @@ export default function AssetsPage() {
     });
   }, [filterName, filterStatus, groupedPortfolios]);
 
+  const filteredProfitSummary = useMemo(() => {
+    const totalProfit = filteredPortfolios.reduce(
+      (sum, item) => sum + (item.profitValue ?? 0),
+      0,
+    );
+    const allTimeProfitPercent =
+      portfolioSummary.firstCapital > 0
+        ? (totalProfit / portfolioSummary.firstCapital) * 100
+        : null;
+
+    return {
+      totalProfit,
+      allTimeProfitPercent,
+    };
+  }, [filteredPortfolios, portfolioSummary.firstCapital]);
+
   const statusCounts = useMemo(() => {
     const closed = groupedPortfolios.filter(
       (item) => Math.abs(item.currentCost) < 0.00000001,
@@ -416,24 +432,24 @@ export default function AssetsPage() {
           <p className="text-sm font-medium text-gray-600 dark:text-gray-300">All-time profit</p>
           <div
             className={`mt-1.5 text-3xl font-bold ${
-              portfolioSummary.totalProfit >= 0
+              filteredProfitSummary.totalProfit >= 0
                 ? "text-green-600 dark:text-green-400"
                 : "text-red-600 dark:text-red-400"
             }`}
           >
-            {portfolioSummary.totalProfit >= 0 ? "+" : ""}
-            {formatCurrency(portfolioSummary.totalProfit)}
+            {filteredProfitSummary.totalProfit >= 0 ? "+" : ""}
+            {formatCurrency(filteredProfitSummary.totalProfit)}
           </div>
-          {portfolioSummary.allTimeProfitPercent !== null && (
+          {filteredProfitSummary.allTimeProfitPercent !== null && (
             <div
               className={`mt-1 text-lg font-semibold ${
-                portfolioSummary.allTimeProfitPercent >= 0
+                filteredProfitSummary.allTimeProfitPercent >= 0
                   ? "text-green-600 dark:text-green-400"
                   : "text-red-600 dark:text-red-400"
               }`}
             >
-              {portfolioSummary.allTimeProfitPercent >= 0 ? "+" : ""}
-              {portfolioSummary.allTimeProfitPercent.toFixed(2)}%
+              {filteredProfitSummary.allTimeProfitPercent >= 0 ? "+" : ""}
+              {filteredProfitSummary.allTimeProfitPercent.toFixed(2)}%
             </div>
           )}
         </div>
