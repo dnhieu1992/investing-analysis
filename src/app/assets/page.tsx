@@ -79,6 +79,8 @@ export default function AssetsPage() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filterName, setFilterName] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "holding" | "closed">("all");
 
   const isEditing = useMemo(() => editingId !== null, [editingId]);
 
@@ -310,6 +312,35 @@ export default function AssetsPage() {
     };
   }, [groupedPortfolios]);
 
+  const filteredPortfolios = useMemo(() => {
+    const query = filterName.trim().toLowerCase();
+    return groupedPortfolios.filter((item) => {
+      const matchesName = query
+        ? item.name.toLowerCase().includes(query)
+        : true;
+      const isClosed = Math.abs(item.currentCost) < 0.00000001;
+      const matchesStatus =
+        filterStatus === "all"
+          ? true
+          : filterStatus === "closed"
+            ? isClosed
+            : !isClosed;
+      return matchesName && matchesStatus;
+    });
+  }, [filterName, filterStatus, groupedPortfolios]);
+
+  const statusCounts = useMemo(() => {
+    const closed = groupedPortfolios.filter(
+      (item) => Math.abs(item.currentCost) < 0.00000001,
+    ).length;
+    const holding = groupedPortfolios.length - closed;
+    return {
+      all: groupedPortfolios.length,
+      holding,
+      closed,
+    };
+  }, [groupedPortfolios]);
+
 
   return (
     <div className="mx-auto flex w-[95%] max-w-none flex-col gap-8 px-6 py-10 text-gray-900 dark:text-gray-100">
@@ -412,6 +443,57 @@ export default function AssetsPage() {
         <div className="border-b border-gray-200 px-6 py-4 text-sm font-semibold dark:border-gray-800">
           Portfolios
         </div>
+        <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-800">
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <span>Name</span>
+              <input
+                value={filterName}
+                onChange={(e) => setFilterName(e.target.value)}
+                placeholder="Ex: BTC"
+                className="w-48 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              />
+            </label>
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <span>Status</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("all")}
+                  className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold ${
+                    filterStatus === "all"
+                      ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                      : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                  }`}
+                >
+                  All ({statusCounts.all})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("holding")}
+                  className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold ${
+                    filterStatus === "holding"
+                      ? "bg-green-600 text-white dark:bg-green-500 dark:text-white"
+                      : "bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300"
+                  }`}
+                >
+                  Holding ({statusCounts.holding})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterStatus("closed")}
+                  className={`cursor-pointer rounded-full px-3 py-1 text-xs font-semibold ${
+                    filterStatus === "closed"
+                      ? "bg-red-600 text-white dark:bg-red-500 dark:text-white"
+                      : "bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300"
+                  }`}
+                >
+                  Closed ({statusCounts.closed})
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
         <div className="overflow-x-auto overflow-y-visible">
           <table className="min-w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-900 dark:text-gray-400">
@@ -425,14 +507,14 @@ export default function AssetsPage() {
               </tr>
             </thead>
             <tbody>
-              {groupedPortfolios.length === 0 ? (
+              {filteredPortfolios.length === 0 ? (
                 <tr>
                   <td className="px-4 py-6 text-center text-gray-500 dark:text-gray-400" colSpan={6}>
-                    No portfolios yet.
+                    No portfolios found.
                   </td>
                 </tr>
               ) : (
-                groupedPortfolios.map((item) => {
+                filteredPortfolios.map((item) => {
                   const avgBuyPrice = item.avgBuyPrice;
                   const profitValue = item.profitValue;
                   const profitClass =
