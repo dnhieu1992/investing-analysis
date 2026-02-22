@@ -19,6 +19,19 @@ type Asset = {
   notes: string | null;
 };
 
+type GroupedPortfolio = {
+  name: string;
+  currentCost: number;
+  profitValue: number | null;
+};
+
+function formatUsdt(value: number) {
+  return `$${value.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 export default function Home() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -83,11 +96,127 @@ export default function Home() {
     [holdings],
   );
 
+  const holdingsByValueDesc = useMemo(
+    () =>
+      [...holdings].sort(
+        (a, b) =>
+          b.quantity * b.avgBuyPrice - a.quantity * a.avgBuyPrice,
+      ),
+    [holdings],
+  );
+
+  const groupedPortfolios = useMemo(() => {
+    const map = new Map<
+      string,
+      {
+        name: string;
+        latestTransaction: Asset;
+        totalBuyQty: number;
+        totalBuyCost: number;
+        netQty: number;
+      }
+    >();
+
+    for (const tx of assets) {
+      const existing = map.get(tx.name);
+      if (!existing) {
+        map.set(tx.name, {
+          name: tx.name,
+          latestTransaction: tx,
+          totalBuyQty: tx.type === "buy" ? tx.quantity : 0,
+          totalBuyCost: tx.type === "buy" ? tx.quantity * tx.pricePerCoin : 0,
+          netQty: tx.type === "buy" ? tx.quantity : -tx.quantity,
+        });
+        continue;
+      }
+
+      if (tx.type === "buy") {
+        existing.totalBuyQty += tx.quantity;
+        existing.totalBuyCost += tx.quantity * tx.pricePerCoin;
+        existing.netQty += tx.quantity;
+      } else {
+        existing.netQty -= tx.quantity;
+      }
+
+      const existingTime = Date.parse(existing.latestTransaction.date ?? "");
+      const txTime = Date.parse(tx.date ?? "");
+      if (
+        Number.isNaN(existingTime) ||
+        (!Number.isNaN(txTime) && txTime > existingTime) ||
+        (txTime === existingTime && tx.id > existing.latestTransaction.id)
+      ) {
+        existing.latestTransaction = tx;
+      }
+    }
+
+    return Array.from(map.values()).map((entry): GroupedPortfolio => {
+      const avgBuyPrice =
+        entry.totalBuyQty > 0 ? entry.totalBuyCost / entry.totalBuyQty : null;
+      const sellTransactions = assets.filter(
+        (item) => item.name === entry.name && item.type === "sell",
+      );
+      const totalSellQuantity = sellTransactions.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      );
+      const soldCapital =
+        avgBuyPrice !== null && avgBuyPrice > 0
+          ? avgBuyPrice * totalSellQuantity
+          : 0;
+      const currentCost = entry.totalBuyCost - soldCapital;
+      const profitValue =
+        avgBuyPrice !== null && avgBuyPrice > 0 && totalSellQuantity > 0
+          ? sellTransactions.reduce(
+              (sum, item) =>
+                sum + (item.pricePerCoin - avgBuyPrice) * item.quantity,
+              0,
+            )
+          : null;
+
+      return {
+        name: entry.name,
+        currentCost,
+        profitValue,
+      };
+    });
+  }, [assets]);
+
+  const summary = useMemo(() => {
+    const firstCapital = 2000;
+    const totalProfitNet = groupedPortfolios.reduce(
+      (sum, item) => sum + (item.profitValue ?? 0),
+      0,
+    );
+    const totalProfit = groupedPortfolios.reduce(
+      (sum, item) => sum + Math.max(item.profitValue ?? 0, 0),
+      0,
+    );
+    const totalLoss = groupedPortfolios.reduce(
+      (sum, item) => sum + Math.min(item.profitValue ?? 0, 0),
+      0,
+    );
+    const holdingUsdt = groupedPortfolios.reduce(
+      (sum, item) => sum + Math.max(item.currentCost, 0),
+      0,
+    );
+    const remainUsdt = firstCapital - holdingUsdt;
+
+    return {
+      firstCapital,
+      remainUsdt,
+      totalProfit,
+      totalLoss,
+      totalProfitNet,
+    };
+  }, [groupedPortfolios]);
+
   const chartData = useMemo(() => {
-    const hasHoldings = holdings.length > 0;
-    const labels = hasHoldings ? holdings.map((asset) => asset.name) : ["USDT"];
+    const hasHoldings = holdingsByValueDesc.length > 0;
+    const labels = hasHoldings
+      ? holdingsByValueDesc.map((asset) => asset.name)
+      : ["USDT"];
     const values = hasHoldings
-      ? holdings.map((asset) => asset.quantity * asset.avgBuyPrice)
+      ? holdingsByValueDesc.map((asset) => asset.quantity * asset.avgBuyPrice)
       : [1];
     const colors = [
       "#111827",
@@ -114,7 +243,7 @@ export default function Home() {
         },
       ],
     };
-  }, [holdings]);
+  }, [holdingsByValueDesc]);
 
   const chartOptions = useMemo(
     () => ({
@@ -131,7 +260,7 @@ export default function Home() {
         tooltip: {
           callbacks: {
             label: (context: TooltipItem<"pie">) => {
-              if (holdings.length === 0) return "USDT: 100%";
+              if (holdingsByValueDesc.length === 0) return "USDT: 100%";
               const raw = typeof context.raw === "number" ? context.raw : 0;
               const percent = totalValue > 0 ? (raw / totalValue) * 100 : 0;
               return `${context.label}: ${percent.toFixed(1)}%`;
@@ -140,11 +269,9 @@ export default function Home() {
         },
       },
     }),
-    [holdings.length, totalValue],
+    [holdingsByValueDesc, totalValue],
   );
 
-  const totalProfit = 0;
-  const totalLoss = 0;
   const valueColor = (value: number) =>
     value >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400";
 
@@ -190,37 +317,39 @@ export default function Home() {
         </p>
       </header>
 
-      <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
             Total USDT
           </p>
-          <div className="mt-2 text-2xl font-semibold text-green-600 dark:text-green-400">
-            1000 USDT
+          <div className="mt-1.5 text-3xl font-bold text-green-600 dark:text-green-400">
+            {formatUsdt(summary.firstCapital)}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
             Remain USDT
           </p>
-          <div className="mt-2 text-2xl font-semibold text-green-600 dark:text-green-400">
-            1000 USDT
+          <div className="mt-1.5 text-3xl font-bold text-green-600 dark:text-green-400">
+            {formatUsdt(summary.remainUsdt)}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
             Total Profit
           </p>
-          <div className={`mt-2 text-2xl font-semibold ${valueColor(totalProfit)}`}>
-            {totalProfit} USDT
+          <div className={`mt-1.5 text-3xl font-bold ${valueColor(summary.totalProfit)}`}>
+            {summary.totalProfit >= 0 ? "+" : ""}
+            {formatUsdt(summary.totalProfit)}
           </div>
         </div>
-        <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-950">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950">
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
             Total Loss
           </p>
-          <div className={`mt-2 text-2xl font-semibold ${valueColor(totalLoss)}`}>
-            {totalLoss} USDT
+          <div className={`mt-1.5 text-3xl font-bold ${valueColor(summary.totalLoss)}`}>
+            {summary.totalLoss >= 0 ? "+" : ""}
+            {formatUsdt(summary.totalLoss)}
           </div>
         </div>
       </section>
@@ -248,7 +377,7 @@ export default function Home() {
             <Pie data={chartData} options={chartOptions} />
           </div>
           <div className="grid gap-3">
-            {holdings.length === 0 ? (
+            {holdingsByValueDesc.length === 0 ? (
               <div className="flex items-center flex-start gap-3">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <span
@@ -260,7 +389,7 @@ export default function Home() {
                 <div className="text-xs text-gray-500 dark:text-gray-400">100%</div>
               </div>
             ) : (
-              holdings.map((asset, index) => {
+              holdingsByValueDesc.map((asset, index) => {
                 const value = asset.quantity * asset.avgBuyPrice;
                 const percent = totalValue > 0 ? (value / totalValue) * 100 : 0;
                 const color = chartData.datasets[0].backgroundColor[index];
