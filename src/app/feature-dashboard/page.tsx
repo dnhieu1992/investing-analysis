@@ -134,6 +134,12 @@ export default function FeatureDashboardPage() {
           Feature Dashboard
         </Link>
         <Link
+          href="/dca-btc"
+          className="cursor-pointer rounded-md px-3 py-2 text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white"
+        >
+          DCA BTC
+        </Link>
+        <Link
           href="/stratery"
           className="cursor-pointer rounded-md px-3 py-2 text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white"
         >
