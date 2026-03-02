@@ -102,6 +102,34 @@ function parseReferenceImages(value: string) {
     .filter(Boolean);
 }
 
+function normalizeNumberInput(value: string) {
+  return value.replace(/,/g, "");
+}
+
+function preventCommaKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  if (e.key === ",") {
+    e.preventDefault();
+  }
+}
+
+function handleNumberPaste(
+  e: React.ClipboardEvent<HTMLInputElement>,
+  setValue: (value: string) => void,
+) {
+  const pasted = e.clipboardData.getData("text");
+  if (!pasted.includes(",")) return;
+
+  e.preventDefault();
+  const input = e.currentTarget;
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? input.value.length;
+  const nextValue =
+    input.value.slice(0, start) +
+    normalizeNumberInput(pasted) +
+    input.value.slice(end);
+  setValue(normalizeNumberInput(nextValue));
+}
+
 function calcProfitLoss(trade: TradingHistory) {
   if (trade.closePrice === null) return null;
   const priceChangeRatio =
@@ -384,11 +412,13 @@ export default function TradingHistoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const openPrice = Number(form.openPrice);
+      const openPrice = Number(normalizeNumberInput(form.openPrice));
       const closePrice =
-        form.closePrice.trim() === "" ? null : Number(form.closePrice);
-      const level = Number(form.level);
-      const volume = Number(form.volume);
+        form.closePrice.trim() === ""
+          ? null
+          : Number(normalizeNumberInput(form.closePrice));
+      const level = Number(normalizeNumberInput(form.level));
+      const volume = Number(normalizeNumberInput(form.volume));
       if (
         Number.isNaN(openPrice) ||
         Number.isNaN(level) ||
@@ -467,7 +497,7 @@ export default function TradingHistoryPage() {
     setLoading(true);
     setError(null);
     try {
-      const closePrice = Number(closePriceInput);
+      const closePrice = Number(normalizeNumberInput(closePriceInput));
       if (Number.isNaN(closePrice)) {
         setError("Please enter a valid close price.");
         return;
@@ -495,7 +525,7 @@ export default function TradingHistoryPage() {
 
   const tempProfit = useMemo(() => {
     if (!closeTrade) return null;
-    const closePrice = Number(closePriceInput);
+    const closePrice = Number(normalizeNumberInput(closePriceInput));
     if (Number.isNaN(closePrice) || closePriceInput.trim() === "") return null;
     const priceChangeRatio =
       closeTrade.type === "short"
@@ -678,6 +708,7 @@ export default function TradingHistoryPage() {
                 <th className="px-4 py-3">Source</th>
                 <th className="px-4 py-3">Order type</th>
                 <th className="px-4 py-3">Profit/Loss</th>
+                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Refs</th>
                 <th className="px-4 py-3">Actions</th>
               </tr>
@@ -687,7 +718,7 @@ export default function TradingHistoryPage() {
                 <tr>
                   <td
                     className="px-4 py-6 text-center text-gray-500 dark:text-gray-400"
-                    colSpan={8}
+                    colSpan={12}
                   >
                     No trades yet.
                   </td>
@@ -736,6 +767,19 @@ export default function TradingHistoryPage() {
                             : "text-red-600 dark:text-red-400";
                         return <span className={colorClass}>{value}</span>;
                       })()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        type="button"
+                        disabled
+                        className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                          trade.closePrice === null
+                            ? "border-amber-200 bg-amber-100 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/20 dark:text-amber-300"
+                            : "border-green-200 bg-green-100 text-green-700 dark:border-green-500/40 dark:bg-green-500/20 dark:text-green-300"
+                        }`}
+                      >
+                        {trade.closePrice === null ? "Opening" : "Closed"}
+                      </button>
                     </td>
                     <td className="px-4 py-3">{trade.referenceImages.length}</td>
                     <td className="px-4 py-3">
@@ -837,8 +881,14 @@ export default function TradingHistoryPage() {
                     step="0.0001"
                     className="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
                     value={form.openPrice}
+                    onKeyDown={preventCommaKeyDown}
+                    onPaste={(e) =>
+                      handleNumberPaste(e, (value) =>
+                        onChange("openPrice", value),
+                      )
+                    }
                     onChange={(e) =>
-                      onChange("openPrice", e.target.value)
+                      onChange("openPrice", normalizeNumberInput(e.target.value))
                     }
                     required
                   />
@@ -866,8 +916,17 @@ export default function TradingHistoryPage() {
                     step="0.0001"
                     className="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
                     value={form.closePrice}
+                    onKeyDown={preventCommaKeyDown}
+                    onPaste={(e) =>
+                      handleNumberPaste(e, (value) =>
+                        onChange("closePrice", value),
+                      )
+                    }
                     onChange={(e) =>
-                      onChange("closePrice", e.target.value)
+                      onChange(
+                        "closePrice",
+                        normalizeNumberInput(e.target.value),
+                      )
                     }
                   />
                 </label>
@@ -907,7 +966,13 @@ export default function TradingHistoryPage() {
                     type="number"
                     className="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
                     value={form.level}
-                    onChange={(e) => onChange("level", e.target.value)}
+                    onKeyDown={preventCommaKeyDown}
+                    onPaste={(e) =>
+                      handleNumberPaste(e, (value) => onChange("level", value))
+                    }
+                    onChange={(e) =>
+                      onChange("level", normalizeNumberInput(e.target.value))
+                    }
                     required
                   />
                 </label>
@@ -921,7 +986,13 @@ export default function TradingHistoryPage() {
                     step="0.0001"
                     className="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
                     value={form.volume}
-                    onChange={(e) => onChange("volume", e.target.value)}
+                    onKeyDown={preventCommaKeyDown}
+                    onPaste={(e) =>
+                      handleNumberPaste(e, (value) => onChange("volume", value))
+                    }
+                    onChange={(e) =>
+                      onChange("volume", normalizeNumberInput(e.target.value))
+                    }
                     required
                   />
                 </label>
@@ -1044,7 +1115,13 @@ export default function TradingHistoryPage() {
                     step="0.0001"
                     className="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-900"
                     value={closePriceInput}
-                    onChange={(e) => setClosePriceInput(e.target.value)}
+                    onKeyDown={preventCommaKeyDown}
+                    onPaste={(e) =>
+                      handleNumberPaste(e, (value) => setClosePriceInput(value))
+                    }
+                    onChange={(e) =>
+                      setClosePriceInput(normalizeNumberInput(e.target.value))
+                    }
                     required
                   />
                 </label>
