@@ -730,7 +730,13 @@ export default function TradingHistoryPage() {
                     className="border-t border-gray-100 dark:border-gray-800"
                   >
                     <td className="px-4 py-3 font-medium">
-                      <div>{trade.name}</div>
+                      <button
+                        type="button"
+                        className="cursor-pointer underline decoration-1 underline-offset-2"
+                        onClick={() => startEdit(trade)}
+                      >
+                        {trade.name}
+                      </button>
                       <span
                         className={`mt-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ${
                           trade.type === "long"
@@ -783,24 +789,49 @@ export default function TradingHistoryPage() {
                     </td>
                     <td className="px-4 py-3">{trade.referenceImages.length}</td>
                     <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
                         <button
-                          className="cursor-pointer rounded-md border border-green-200 px-3 py-1 text-xs text-green-700 dark:border-green-500/40 dark:text-green-400"
+                          type="button"
+                          title="Close trade"
+                          aria-label="Close trade"
+                          className="cursor-pointer rounded-md border border-green-200 p-1.5 text-green-700 hover:bg-green-50 dark:border-green-500/40 dark:text-green-400 dark:hover:bg-green-500/10"
                           onClick={() => startClose(trade)}
                         >
-                          Close
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                          >
+                            <circle cx="12" cy="12" r="9" />
+                            <path d="M8 12l2.5 2.5L16 9" />
+                          </svg>
                         </button>
                         <button
-                          className="cursor-pointer rounded-md border border-gray-300 px-3 py-1 text-xs dark:border-gray-700 dark:text-gray-200"
-                          onClick={() => startEdit(trade)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="cursor-pointer rounded-md border border-red-200 px-3 py-1 text-xs text-red-600 dark:border-red-500/40 dark:text-red-400"
+                          type="button"
+                          title="Delete trade"
+                          aria-label="Delete trade"
+                          className="cursor-pointer rounded-md border border-red-200 p-1.5 text-red-600 hover:bg-red-50 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10"
                           onClick={() => removeTrade(trade.id)}
                         >
-                          Delete
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-4 w-4"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4h8v2" />
+                            <path d="M19 6l-1 14H6L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                          </svg>
                         </button>
                       </div>
                     </td>
