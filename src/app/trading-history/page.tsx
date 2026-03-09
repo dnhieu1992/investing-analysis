@@ -262,6 +262,13 @@ export default function TradingHistoryPage() {
     filterStatus,
   ]);
 
+  const totalProfitLoss = useMemo(() => {
+    return filteredTrades.reduce((sum, trade) => {
+      const profit = calcProfitLoss(trade);
+      return profit === null ? sum : sum + profit;
+    }, 0);
+  }, [filteredTrades]);
+
   function onChange<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -619,6 +626,27 @@ export default function TradingHistoryPage() {
           </button>
         </div>
       </header>
+
+      <div className="flex justify-end">
+        <div className="min-w-[220px] rounded-xl border border-gray-200 bg-white p-4 text-right shadow-sm dark:border-gray-700 dark:bg-gray-900">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            Total Profit/Loss
+          </p>
+          <p
+            className={`mt-2 text-2xl font-semibold ${
+              totalProfitLoss >= 0
+                ? "text-green-600 dark:text-green-400"
+                : "text-red-600 dark:text-red-400"
+            }`}
+          >
+            {totalProfitLoss >= 0 ? "+" : ""}
+            {totalProfitLoss.toFixed(2)}
+          </p>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Based on current filters (closed trades only)
+          </p>
+        </div>
+      </div>
 
       <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-950">
         <div className="border-b border-gray-200 px-6 py-4 text-sm font-semibold dark:border-gray-800">
